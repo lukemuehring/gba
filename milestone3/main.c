@@ -1,3 +1,73 @@
+/*
+Finished:
+    Made very very basic screens
+    Created game state machine
+    Made spritesheet
+    Created a player
+    Player can be controlled by the up and down keys
+    Created obstacles
+    Obstacles are spawned at random times and the type of the obstacle is also random
+    Created police
+    Created bullets that destroy obstacles
+
+To Do:
+
+    Give the player one chance after being hit
+        Player hit animation (blinking sprite) and moves one spot to left, if hit again gets caught by police and loses
+
+    Enable the Ghost Mode cheat (player is not affected by obsacles)
+
+    change player movement mechanics
+        have the button presses more permanent:
+            when down is pressed, the car stays in the DOWN position until up is pressed and returns to the NORMAL pos
+            when up is pressed (in the NORMAL pos), the car does a little jump as explained below
+            
+        implement gravity for the player (when pressing up, the car performs a "jump" so that it can't stay in the higher pos forever)
+            make sure the player can not double jump
+
+    Use timers to determine when obstacles spawn so you have more control
+    
+    design indestructible obstacles (obstacles that must be avoided, can't be shot)
+    implement indestructible obstacles 
+
+    Make sure that there is always a way to survive the obstacles and no impossible situation occurs
+
+    add score counter on the screen
+
+    add sound to the game
+        add background music
+        have sound effects play when:
+            player is hit
+            player 
+
+    Create the road by using a background
+    Create the other 3 simultaneuous backgrounds and have them move in parallax
+
+    Design a player sprite
+    Animate the Player "car"
+    Design a police sprite
+    Animate the police to have flashing lights
+        Animate the police so that they move back an forth slightly on the road as if they were trying to speed up to catch you
+    Animate the bird sprite to fly
+
+    add game sweetners like designing the non game screens and animated sprites
+        START screen
+            display high score
+        INSTRUCTIONS screen
+        PAUSE screen
+        LOSE screen
+            display score 
+            find a way to save the high score 
+
+        Have the game speed up (makes it more difficult) over time, ex after 1000 pts are hit
+        When the player loses have everything freeze for a second and do an exploding animaton on the car so the user
+        can see just how exactly they messed up and what object they hit, then move to the lose screen
+            (instead of moving straight to the lose screen)
+            can play mario-like death noise during this time to taunt the user
+    
+*/
+#include <stdlib.h>
+#include <stdio.h>
 #include "myLib.h"
 #include "welcome.h"
 #include "instructions.h"
@@ -34,6 +104,9 @@ unsigned short oldButtons;
 
 // Text Buffer
 //char buffer[47];
+
+// Random Seed
+int seed;
 
 int main() {
 
@@ -133,16 +206,22 @@ void goToStart() {
     REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
     state = START;
 
+    // Begin the seed randomization
+    seed = 0;
+
 }
 
 // Runs every frame of the start state
 void start() {
+    //Update the seed
+    seed++;
 
     // Lock the framerate to 60 fps
     waitForVBlank();
 
     // State transitions
     if (BUTTON_PRESSED(BUTTON_START)) {
+        srand(seed); //seed the random generator
     	initGame();
         goToGame();
     }

@@ -1,8 +1,10 @@
+#include <stdlib.h>
 #include "myLib.h"
 #include "game.h"
 
 // Variables
 PLAYER player;
+POLICE police[NUMPOLICE];
 OBSTACLE obs[OBSTACLECOUNT];
 BULLET bullets[BULLETCOUNT];
 int hasLost;
@@ -11,8 +13,16 @@ int score;
 // Initialize the game
 void initGame() {
 	initPlayer();
-    initObstacles();
+
+	for (int i = 0; i < NUMPOLICE; i++) {
+		initPolice(&police[i], i + 1);
+	}
+	
+	for (int i = 0; i < OBSTACLECOUNT; i++)
+    	initObstacle(&obs[i], i + 1, i % NUMOBSTYPES);
+
     initBullets();
+
     score = 0;
     hasLost = 0;
  }
@@ -20,6 +30,16 @@ void initGame() {
 // Updates the game each frame
 void updateGame() {
 	updatePlayer();
+
+	int randomIndex; //This is for spawning a random obstacle in the obstacle array at a random time between 1-3 seconds.
+
+	//Random timing
+	if (rand() % 100 == 0) {
+		randomIndex = rand() % OBSTACLECOUNT;
+		if ((&obs[randomIndex])->active == 0) {
+			spawnObstacle(&obs[randomIndex]); 
+		}
+	}
 
 	// Update all the obstacles
 	for (int i = 0; i < OBSTACLECOUNT; i++)
@@ -29,41 +49,99 @@ void updateGame() {
 	for (int i = 0; i < BULLETCOUNT; i++)
 		updateBullets(&bullets[i]);
 
+	for (int i = 0; i < NUMPOLICE; i++) {
+		updatePolice(&police[i]);
+	}
+
+	//Update all the sprites in actual OAM
 	waitForVBlank();
 	DMANow(3, shadowOAM, OAM, 128 * 4);
+
+	score++;
 }
 
 // Initialize the player
 void initPlayer() {
 
-	player.screenRow = SCREENHEIGHT - 64;
-	player.screenCol = SCREENWIDTH / 2 - 30;
+	player.screenRow = ROADROW - 16; //ROADROW arbitrarily chosen, and we subtract the sprite height to keep it on the same level
+	player.screenCol = (SCREENWIDTH / 2)- 30; //arbitrarily chosen
 	player.cdel = 1;
-	player.height = 8;
-	player.width = 16;
+	player.rdel = 1;
+	player.height = 16;
+	player.width = 32;
 
+	//Animation
+	/*int aniCounter;
+    int aniState;
+    int prevAniState;
+    int curFrame;
+    int numFrames;
+    int hide;*/
 }
 
-// Initialize the obstacles
-void initObstacles() {
-	for (int i = 0; i < OBSTACLECOUNT; i++) {
-		obs[i].spriteID = i + 1;
-		obs[i].spriteType = i % NUMSPRITETYPES;
-		obs[i].hp = 3;
-		obs[i].destructible = 1;
-		obs[i].active = 1;
-
-		//Animation
-		// obs[i].aniCounter = 0;
-		// obs[i].curFrame = 0;
-
-		//Dependent on Obstacle Type
-		obs[i].row = player.screenRow;
-		obs[i].col = SCREENWIDTH - obs[i].width - 1;
-		obs[i].width = 8;
-		obs[i].height = 8;
-		obs[i].cdel = -1;
+void initPolice(POLICE* p, int spriteID) {
+	p->spriteID = spriteID;
+	p->width = 32;
+	p->height = 16;
+	p->row = ROADLOW - 16;
+	if (spriteID % 3) {
+		p->row += 3;
 	}
+	p->col = (player.screenCol - (player.width * 2) - 16) + 3 * spriteID; //this is a mess but it works
+	p->cdel = 1;
+	
+	//Animation
+	/*int aniCounter;
+    int aniState;
+    int prevAniState;
+    int curFrame;
+    int numFrames;
+    int hide;*/
+}
+
+// Initialize an obstacle, inactive by default
+void initObstacle(OBSTACLE* e, int spriteID, int spriteType) {
+	e->spriteID = spriteID;
+	e->spriteType = spriteType;
+	e->hp = 3;
+	e->destructible = 1;
+	e->active = 0;
+
+	//Animation
+	// e->aniCounter = 0;
+	// e->curFrame = 0;
+
+	//Dependent on Obstacle Type
+	switch(e->spriteType) {
+		case POTHOLE:
+			e->width = 32;
+			e->height = 8;
+			e->cdel = -1;
+			e->row = ROADLOW - 8; //on the road
+			e->col = SCREENWIDTH;
+			break;
+		case BIRD:
+			e->width = 8;
+			e->height = 8;
+			e->cdel = -2;
+			e->row = ROADHIGH; //bird is above the normal level @in future make this random between normal and high
+			e->col = SCREENWIDTH;
+			break;
+		case SIGN:
+			e->width = 8;
+			e->height = 16;
+			e->cdel = -1;
+			e->row = ROADLOW - 16; //normal level, hits low and normal
+			e->col = SCREENWIDTH;
+			break;
+		case LONGSIGN:
+			e->width = 8;
+			e->height = 24;
+			e->cdel = -1;
+			e->row = ROADLOW - 24; //normal level, hits low and normal
+			e->col = SCREENWIDTH;
+
+	}	
 }
 
 // Initialize the bullets
@@ -79,15 +157,21 @@ void initBullets() {
 	}
 }
 
+//Spawns the obstacle at index i of the obstacle array (we are given a pointer to this obstacle)
+void spawnObstacle(OBSTACLE* e) {
+	initObstacle(e, e->spriteID, e->spriteType);
+	e->active = 1;
+}
+
 // Handle every-frame actions of the player
 void updatePlayer() {
         // Control movement and change animation state
 		if(BUTTON_HELD(BUTTON_UP)) {
-			player.screenRow = ROADROW - 16;
+			player.screenRow = ROADROW - (16 * 2);
 		} else if(BUTTON_HELD(BUTTON_DOWN)) {
-			player.screenRow = ROADROW + 16;
+			player.screenRow = ROADROW - 8;
 		} else {
-			player.screenRow = ROADROW;
+			player.screenRow = ROADROW - 16;
 		}
 		if(BUTTON_PRESSED(BUTTON_A)) {
 			fireBullet();
@@ -103,9 +187,12 @@ void updatePlayer() {
 
 // Handle every-frame actions of an obstacle
 void updateObstacles(OBSTACLE* e) {
-	if (e->col <= 0 /*if the obstacle goes off the left side of the screen */) {
+
+	//if the obstacle goes off the left side of the screen
+	if (e->col <= (0 - e->width)) {
 		e->active = 0;
 	}
+
 	if (e->active) {
 		//Check if this obstacle is hitting any bullets.
 		for (int i = 0; i < BULLETCOUNT; i++) {
@@ -129,10 +216,32 @@ void updateObstacles(OBSTACLE* e) {
 		e-> col += e-> cdel;
 
 		//obstacles at sprite index 1 to NUMOBSTACLES
-		//current obtacle is at tile (0,2) on spritesheet
-		shadowOAM[e->spriteID].attr0 = ATTR0_WIDE | e->row;
-		shadowOAM[e->spriteID].attr1 = ATTR1_SMALL | e->col;
-		shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,9)) | ATTR2_PALROW(0);
+		switch(e->spriteType) {
+			case POTHOLE:
+				//Potholes are at tile (0,9) on spritesheet
+				shadowOAM[e->spriteID].attr0 = ATTR0_WIDE | (ROWMASK & e->row);
+				shadowOAM[e->spriteID].attr1 = ATTR1_SMALL |  (COLMASK & e->col);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,9)) | ATTR2_PALROW(0); //@ set priorities to make the signs draw over the potholes
+				break;
+			case BIRD:
+				//Birds are at tile (0,7) on spritesheet
+				shadowOAM[e->spriteID].attr0 = ATTR0_SQUARE | (ROWMASK & e->row);
+				shadowOAM[e->spriteID].attr1 = ATTR1_TINY | (COLMASK & e->col);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,7)) | ATTR2_PALROW(0);
+				break;
+			case SIGN:
+				//Signs are at tile (1,9) on spritesheet
+				shadowOAM[e->spriteID].attr0 = ATTR0_TALL | (ROWMASK & e->row);
+				shadowOAM[e->spriteID].attr1 = ATTR1_TINY |  (COLMASK & e->col);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(1,9)) | ATTR2_PALROW(0);
+				break;
+			case LONGSIGN:
+				//Long signs are at tile (1,10) on spritesheet
+				shadowOAM[e->spriteID].attr0 = ATTR0_TALL | (ROWMASK & e->row);
+				shadowOAM[e->spriteID].attr1 = ATTR1_SMALL |  (COLMASK & e->col);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(1,10)) | ATTR2_PALROW(0);
+				break;
+		}	
 
 		// e->aniCounter++;
 
@@ -145,11 +254,11 @@ void updateObstacles(OBSTACLE* e) {
 void updateBullets(BULLET* b) {
 	if (b->active) {
 		b->col += b->cdel;
-		if (!(b->col > SCREENWIDTH /* if the bullet is not off of the screen */ )) {
+		if (!(b->col > SCREENWIDTH + b->width /* if the bullet is not off of the screen */ )) {
 			//putting the bullets at sprite index 50
 			//bullets are tile (0,4) on spritesheet
-			shadowOAM[50 + b->spriteID].attr0 = ATTR0_SQUARE | b->row;
-			shadowOAM[50 + b->spriteID].attr1 = ATTR1_TINY | b->col;
+			shadowOAM[50 + b->spriteID].attr0 = ATTR0_SQUARE | (ROWMASK & b->row);
+			shadowOAM[50 + b->spriteID].attr1 = ATTR1_TINY |  (COLMASK & b->col);
 			shadowOAM[50 + b->spriteID].attr2 = (ATTR2_TILEID(0,6)) | ATTR2_PALROW(0); 
 		} else {
 			b->active = 0;
@@ -158,6 +267,14 @@ void updateBullets(BULLET* b) {
 		//if inactive, hide the bullet.
 		shadowOAM[50 + b->spriteID].attr0 = ATTR0_HIDE;
 	}
+}
+
+void updatePolice(POLICE* p) {
+	//putting the police at sprite index 60
+	//police are tile (3,0) on spritesheet @
+	shadowOAM[60 + p->spriteID].attr0 = ATTR0_WIDE | (ROWMASK & p->row);
+	shadowOAM[60 + p->spriteID].attr1 = ATTR1_MEDIUM |  (COLMASK & p->col);
+	shadowOAM[60 + p->spriteID].attr2 = (ATTR2_TILEID(3,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(0); 
 }
 
 void fireBullet() {

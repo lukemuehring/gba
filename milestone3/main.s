@@ -131,10 +131,13 @@ goToStart:
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
-	mov	r1, #8064
-	mov	r2, #1
-	ldr	r3, .L12+24
-	strh	r1, [r5, #8]	@ movhi
+	mov	ip, #8064
+	mov	r0, #1
+	mov	r2, #0
+	ldr	r1, .L12+24
+	ldr	r3, .L12+28
+	strh	ip, [r5, #8]	@ movhi
+	str	r0, [r1]
 	str	r2, [r3]
 	pop	{r4, r5, r6, lr}
 	bx	lr
@@ -148,6 +151,7 @@ goToStart:
 	.word	100726784
 	.word	instructionsMap
 	.word	state
+	.word	seed
 	.size	goToStart, .-goToStart
 	.align	2
 	.global	menu
@@ -265,15 +269,19 @@ start:
 	@ Function supports interworking.
 	@ args = 0, pretend = 0, frame = 0
 	@ frame_needed = 0, uses_anonymous_args = 0
-	ldr	r3, .L34
 	push	{r4, lr}
+	ldr	r4, .L34
+	ldr	r3, [r4]
+	ldr	r2, .L34+4
+	add	r3, r3, #1
+	str	r3, [r4]
 	mov	lr, pc
-	bx	r3
-	ldr	r3, .L34+4
+	bx	r2
+	ldr	r3, .L34+8
 	ldrh	r3, [r3]
 	tst	r3, #8
 	beq	.L27
-	ldr	r3, .L34+8
+	ldr	r3, .L34+12
 	ldrh	r3, [r3]
 	tst	r3, #8
 	beq	.L33
@@ -281,7 +289,11 @@ start:
 	pop	{r4, lr}
 	bx	lr
 .L33:
-	ldr	r3, .L34+12
+	ldr	r0, [r4]
+	ldr	r3, .L34+16
+	mov	lr, pc
+	bx	r3
+	ldr	r3, .L34+20
 	mov	lr, pc
 	bx	r3
 	pop	{r4, lr}
@@ -289,9 +301,11 @@ start:
 .L35:
 	.align	2
 .L34:
+	.word	seed
 	.word	waitForVBlank
 	.word	oldButtons
 	.word	buttons
+	.word	srand
 	.word	initGame
 	.size	start, .-start
 	.align	2
@@ -598,6 +612,7 @@ main:
 	.word	67109120
 	.word	lose
 	.size	main, .-main
+	.comm	seed,4,4
 	.comm	oldButtons,2,2
 	.comm	buttons,2,2
 	.comm	state,4,4
