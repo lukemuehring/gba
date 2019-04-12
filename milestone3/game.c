@@ -7,11 +7,19 @@ PLAYER player;
 POLICE police[NUMPOLICE];
 OBSTACLE obs[OBSTACLECOUNT];
 BULLET bullets[BULLETCOUNT];
+int ghostMode;
 int hasLost;
 int score;
 
+//Backgroud Variables
+int hOffBG0;
+int vOffBG0;
+
 // Initialize the game
 void initGame() {
+	vOffBG0 = 295;
+    hOffBG0 = 0;
+
 	initPlayer();
 
 	for (int i = 0; i < NUMPOLICE; i++) {
@@ -25,10 +33,15 @@ void initGame() {
 
     score = 0;
     hasLost = 0;
+    ghostMode = 0;
  }
 
 // Updates the game each frame
 void updateGame() {
+	hOffBG0++;
+	REG_BG0HOFF = hOffBG0;
+    REG_BG0VOFF = vOffBG0;
+
 	updatePlayer();
 
 	int randomIndex; //This is for spawning a random obstacle in the obstacle array at a random time between 1-3 seconds.
@@ -84,10 +97,7 @@ void initPolice(POLICE* p, int spriteID) {
 	p->width = 32;
 	p->height = 16;
 	p->row = ROADLOW - 16;
-	if (spriteID % 3) {
-		p->row += 3;
-	}
-	p->col = (player.screenCol - (player.width * 2) - 16) + 3 * spriteID; //this is a mess but it works
+	p->col = (player.screenCol - (player.width * 2) - 16); //@ seperate the police locations
 	p->cdel = 1;
 	
 	//Animation
@@ -176,11 +186,22 @@ void updatePlayer() {
 		if(BUTTON_PRESSED(BUTTON_A)) {
 			fireBullet();
 		}
+		if(BUTTON_HELD(BUTTON_B)) {
+			ghostMode = 1;
+		} else {
+			ghostMode = 0;
+		}
 
 		//player is at sprite index 0
 		shadowOAM[0].attr0 = ATTR0_WIDE | player.screenRow;
 		shadowOAM[0].attr1 = ATTR1_MEDIUM | player.screenCol;
-		shadowOAM[0].attr2 = (ATTR2_TILEID(0,0)) | ATTR2_PALROW(0); 
+
+		if (ghostMode) {
+			shadowOAM[0].attr2 = (ATTR2_TILEID(2,0)) | ATTR2_PALROW(0); 
+		} else {
+			shadowOAM[0].attr2 = (ATTR2_TILEID(0,0)) | ATTR2_PALROW(0); 
+		}
+		
 }
 
 
@@ -208,8 +229,8 @@ void updateObstacles(OBSTACLE* e) {
 		}
 
 		//Check if this obstacle is hitting the player
-		if (collision(player.screenRow, player.screenCol, player.height, player.width, e->row, e->col, e->height, e->width)) {
-			hasLost = 1;
+		if (collision(player.screenRow, player.screenCol, player.height, player.width, e->row, e->col, e->height, e->width) && !(ghostMode)) {
+			player.screenCol -= player.width;
 		}
 
 		//moving the obstacle to the left
@@ -270,11 +291,14 @@ void updateBullets(BULLET* b) {
 }
 
 void updatePolice(POLICE* p) {
+	if (collision(player.screenRow, player.screenCol, player.height, player.width, p->row, p->col, p->height, p->width)) {
+			hasLost = 1;
+		}
 	//putting the police at sprite index 60
-	//police are tile (3,0) on spritesheet @
+	//police are tile (4,0) on spritesheet @
 	shadowOAM[60 + p->spriteID].attr0 = ATTR0_WIDE | (ROWMASK & p->row);
 	shadowOAM[60 + p->spriteID].attr1 = ATTR1_MEDIUM |  (COLMASK & p->col);
-	shadowOAM[60 + p->spriteID].attr2 = (ATTR2_TILEID(3,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(0); 
+	shadowOAM[60 + p->spriteID].attr2 = (ATTR2_TILEID(4,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(0); 
 }
 
 void fireBullet() {

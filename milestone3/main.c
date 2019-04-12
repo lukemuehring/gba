@@ -1,19 +1,32 @@
 /*
 Finished:
-    Made very very basic screens
-    Created game state machine
-    Made spritesheet
-    Created a player
-    Player can be controlled by the up and down keys
-    Created obstacles
-    Obstacles are spawned at random times and the type of the obstacle is also random
-    Created police
-    Created bullets that destroy obstacles
+    Milestones 1 & 2
+        Made very very basic screens
+        Created game state machine
+        Made spritesheet
+        Created a player
+        Player can be controlled by the up and down keys
+        Created obstacles
+        Created bullets that destroy obstacles
+
+    Milestone 3:
+        Obstacles are spawned at random times and the type of the obstacle is also random
+
+        Created police
+
+        Game ends when player touches the police (when hit twice by something)
+
+        Player is given one chance to be hit but there is no animation to make it pretty
+            there is also no recovery period where the player moves back to the original position
+
+        Ghost Mode enabled, press button B to become invincible
 
 To Do:
 
     Give the player one chance after being hit
         Player hit animation (blinking sprite) and moves one spot to left, if hit again gets caught by police and loses
+
+        if not hit for like 3 seconds, slowly moves forward in smooth animation
 
     Enable the Ghost Mode cheat (player is not affected by obsacles)
 
@@ -143,15 +156,6 @@ int main() {
 // Sets up GBA
 void initialize() {
 
-
-	//initialize sprites
-	// DMANow(3, spritesheetPal, SPRITEPALETTE, spritesheetPalLen / 2);
-	// DMANow(3, spritesheetTiles, &CHARBLOCK[4], spritesheetTilesLen / 2);
-
-    //Hide All Sprites
-    hideSprites();	
-    DMANow(3, shadowOAM, OAM, 128 * 4);
-
     // Set up the first state
     goToMenu();
 }
@@ -159,9 +163,7 @@ void initialize() {
 // Sets up the first screen, the menu
 void goToMenu() {
     REG_DISPCTL = MODE0 | BG0_ENABLE;
-    waitForVBlank();
-    REG_DISPCTL = MODE0 | BG0_ENABLE;
-
+    
     //loading welcome screen 
     //loading palette
     DMANow(3, welcomePal, PALETTE, welcomePalLen / 2);
@@ -175,6 +177,9 @@ void goToMenu() {
     //Setting BG0 registers for welcome screen
     REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
     state = MENU;
+
+    hideSprites();  
+    DMANow(3, shadowOAM, OAM, 128 * 4);
 }
 
 void menu() {
@@ -236,16 +241,14 @@ void goToGame() {
 	waitForVBlank();
     DMANow(3, gameBG1Pal, PALETTE, gameBG1PalLen / 2);
 
-    //loading tile data
+    //loading tile data 
     DMANow(3, gameBG1Tiles, &CHARBLOCK[0], gameBG1TilesLen / 2);
 
     //loading TileMap
-    DMANow(3, gameBG1Map, &SCREENBLOCK[30], gameBG1MapLen / 2);
+    DMANow(3, gameBG1Map, &SCREENBLOCK[28], gameBG1MapLen / 2);
 
     //Setting BG0 registers for screen
-    REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;
-
-  
+    REG_BG0CNT = BG_SIZE_LARGE | BG_CHARBLOCK(0) | BG_SCREENBLOCK(28) | BG_8BPP;
     
     //initialize sprites
 	DMANow(3, spritesheetPal, SPRITEPALETTE, spritesheetPalLen / 2);
