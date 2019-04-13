@@ -1,4 +1,26 @@
 /*
+How To Play
+    Avoid the obstacles for as long as you can using the UP and DOWN buttons.
+
+    Hit START to go past the not-yet-implemented menu and instructions screen to enter the game.
+
+    B fires bullets that can destroy obstacles coming at you
+    A enables the cheat that makes you invincible
+
+    Get hit once by an obstacle, and your car slows down and the police catch up a little bit.
+    Get hit again, and the police catch you and you lose.
+
+BUGS / QUESTIONS:
+    -Yo why is the magenta background not transparent? I made the magenta the 0th index of the palette, so it should be see-through
+    FIXED
+
+     -player can avoid losing by staying in the up position FIXED
+
+    -how do I make smooth animations/position updates? Like when the player gets hit, instead of doing a choppy jump, how do I force it
+        to move backwards in a smooth fashion over time, and then stop (like move to the left 4cm smoothly and stop on the screen)
+
+    -pink tile bug + bg1 rail not showing
+
 Finished:
     Milestones 1 & 2
         Made very very basic screens
@@ -21,14 +43,13 @@ Finished:
 
         Ghost Mode enabled, press button B to become invincible
 
+        Created the road by using a background
+
+        Got backround priority working
+
+        Got sprite priority working 
+
 To Do:
-
-    Give the player one chance after being hit
-        Player hit animation (blinking sprite) and moves one spot to left, if hit again gets caught by police and loses
-
-        if not hit for like 3 seconds, slowly moves forward in smooth animation
-
-    Enable the Ghost Mode cheat (player is not affected by obsacles)
 
     change player movement mechanics
         have the button presses more permanent:
@@ -39,6 +60,14 @@ To Do:
             make sure the player can not double jump
 
     Use timers to determine when obstacles spawn so you have more control
+
+    Give the player one chance after being hit
+    Player hit animation (blinking sprite) and moves one spot to left, if hit again gets caught by police and loses
+
+    if not hit for like 3 seconds, slowly moves forward in smooth animation
+
+    mosaic hit animation
+        background becomes mosaic as well?
     
     design indestructible obstacles (obstacles that must be avoided, can't be shot)
     implement indestructible obstacles 
@@ -53,7 +82,6 @@ To Do:
             player is hit
             player 
 
-    Create the road by using a background
     Create the other 3 simultaneuous backgrounds and have them move in parallax
 
     Design a player sprite
@@ -86,6 +114,7 @@ To Do:
 #include "instructions.h"
 #include "game.h"
 #include "gameBG1.h"
+#include "gameBG3.h"
 #include "pause.h"
 #include "lose.h"
 #include "spritesheet.h"
@@ -162,8 +191,8 @@ void initialize() {
 
 // Sets up the first screen, the menu
 void goToMenu() {
-    REG_DISPCTL = MODE0 | BG0_ENABLE;
-    
+    REG_DISPCTL = MODE0 | BG1_ENABLE;
+
     //loading welcome screen 
     //loading palette
     DMANow(3, welcomePal, PALETTE, welcomePalLen / 2);
@@ -175,7 +204,7 @@ void goToMenu() {
     DMANow(3, welcomeMap, &SCREENBLOCK[31], welcomeMapLen / 2);
 
     //Setting BG0 registers for welcome screen
-    REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
     state = MENU;
 
     hideSprites();  
@@ -195,7 +224,7 @@ void menu() {
 // Sets up the start state
 void goToStart() {
     waitForVBlank();
-    REG_DISPCTL = MODE0 | BG0_ENABLE;
+    REG_DISPCTL = MODE0 | BG1_ENABLE;
 
     //loading instructions screen 
 	//loading palette
@@ -208,7 +237,7 @@ void goToStart() {
     DMANow(3, instructionsMap, &SCREENBLOCK[31], instructionsMapLen / 2);
 
     //Setting BG0 registers for welcome screen
-    REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
     state = START;
 
     // Begin the seed randomization
@@ -234,22 +263,46 @@ void start() {
 
 // Sets up the game state
 void goToGame() {
-	REG_DISPCTL = MODE0 | BG0_ENABLE | SPRITE_ENABLE;
+	REG_DISPCTL = MODE0 | BG0_ENABLE | BG3_ENABLE | SPRITE_ENABLE;
 
-	//loading game screen 
-	//loading palette
-	waitForVBlank();
-    DMANow(3, gameBG1Pal, PALETTE, gameBG1PalLen / 2);
+	//loading game screen and backgrounds
 
-    //loading tile data 
+    //loading tile data for BG0
     DMANow(3, gameBG1Tiles, &CHARBLOCK[0], gameBG1TilesLen / 2);
 
-    //loading TileMap
-    DMANow(3, gameBG1Map, &SCREENBLOCK[28], gameBG1MapLen / 2);
+    //loading TileMap for BG0
+    DMANow(3, gameBG1Map, &SCREENBLOCK[5], gameBG1MapLen / 2);
 
-    //Setting BG0 registers for screen
-    REG_BG0CNT = BG_SIZE_LARGE | BG_CHARBLOCK(0) | BG_SCREENBLOCK(28) | BG_8BPP;
-    
+    //Setting BG0 registers for screen, highest priority 3 so it gets drawn in the front 
+    REG_BG0CNT = BG_SIZE_WIDE | BG_CHARBLOCK(0) | BG_SCREENBLOCK(5) | BG_8BPP | 0;
+
+
+    /*MULTIPLE BACKGROUNDS?
+    charblock 0 - 9216 bytes of data
+    screenblock 28 - 4096 bytes of data
+
+    charblock 1 - 58,944 bytes of data
+    screenblock 30 - 4096 bytes of data
+
+
+    0-4 screenblocks filled
+    5,6 screenblocks filed
+
+    8-20 screenblocks
+    */
+
+
+    DMANow(3, gameBG3Pal, PALETTE, gameBG3PalLen / 2);
+
+     //loading tile data for BG3
+    DMANow(3, gameBG3Tiles, &CHARBLOCK[3], gameBG3TilesLen / 2);
+
+    //loading TileMap for BG3
+    DMANow(3, gameBG3Map, &SCREENBLOCK[8], gameBG3MapLen / 2);
+
+    //Setting BG3 registers for screen, lowest priority so its in the background
+    REG_BG3CNT = BG_SIZE_WIDE | BG_CHARBLOCK(3) | BG_SCREENBLOCK(8) | BG_8BPP | 3;
+
     //initialize sprites
 	DMANow(3, spritesheetPal, SPRITEPALETTE, spritesheetPalLen / 2);
 	DMANow(3, spritesheetTiles, &CHARBLOCK[4], spritesheetTilesLen / 2);
@@ -276,7 +329,7 @@ void goToPause() {
 
     waitForVBlank();
     //loading pause screen 
-    REG_DISPCTL = MODE0 | BG0_ENABLE;
+    REG_DISPCTL = MODE0 | BG1_ENABLE;
 
 	//loading palette
     DMANow(3, pausePal, PALETTE, pausePalLen / 2);
@@ -288,7 +341,7 @@ void goToPause() {
     DMANow(3, pauseMap, &SCREENBLOCK[30], pauseMapLen / 2);
 
     //Setting BG0 registers for screen
-    REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;
     
     state = PAUSE;
 }
@@ -310,10 +363,7 @@ void pause() {
 void goToLose() {
     waitForVBlank();
     //loading lose screen 
-    REG_DISPCTL = MODE0 | BG0_ENABLE;
- 
-    //??? hideSprites?
-    //DMANow(3, shadowOAM, OAM, 128 * 4);
+    REG_DISPCTL = MODE0 | BG1_ENABLE;
 
 	//loading palette
     DMANow(3, losePal, PALETTE, losePalLen / 2);
@@ -325,7 +375,7 @@ void goToLose() {
     DMANow(3, loseMap, &SCREENBLOCK[30], loseMapLen / 2);
 
     //Setting BG0 registers for screen
-    REG_BG0CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;   
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;   
 
     state = LOSE;
 }

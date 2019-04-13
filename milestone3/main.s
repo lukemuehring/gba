@@ -22,10 +22,11 @@ goToMenu:
 	@ args = 0, pretend = 0, frame = 0
 	@ frame_needed = 0, uses_anonymous_args = 0
 	push	{r4, r5, r6, lr}
-	mov	r3, #256
-	mov	r5, #67108864
+	mov	r6, #67108864
+	mov	r5, #512
 	ldr	r4, .L4
-	strh	r3, [r5]	@ movhi
+	mov	r3, #256
+	strh	r5, [r6]	@ movhi
 	mov	r2, #83886080
 	ldr	r1, .L4+4
 	mov	r0, #3
@@ -46,12 +47,12 @@ goToMenu:
 	mov	r3, #8064
 	mov	r1, #0
 	ldr	r2, .L4+20
-	strh	r3, [r5, #8]	@ movhi
+	strh	r3, [r6, #10]	@ movhi
 	ldr	r3, .L4+24
 	str	r1, [r2]
 	mov	lr, pc
 	bx	r3
-	mov	r3, #512
+	mov	r3, r5
 	mov	r2, #117440512
 	ldr	r1, .L4+28
 	mov	r0, #3
@@ -99,9 +100,10 @@ goToStart:
 	mov	lr, pc
 	bx	r3
 	mov	r5, #67108864
-	mov	r3, #256
+	mov	r2, #512
 	ldr	r4, .L9+4
-	strh	r3, [r5]	@ movhi
+	strh	r2, [r5]	@ movhi
+	mov	r3, #256
 	mov	r2, #83886080
 	ldr	r1, .L9+8
 	mov	r0, #3
@@ -124,7 +126,7 @@ goToStart:
 	mov	r2, #0
 	ldr	r1, .L9+24
 	ldr	r3, .L9+28
-	strh	ip, [r5, #8]	@ movhi
+	strh	ip, [r5, #10]	@ movhi
 	str	r0, [r1]
 	str	r2, [r3]
 	pop	{r4, r5, r6, lr}
@@ -187,60 +189,75 @@ goToGame:
 	@ args = 0, pretend = 0, frame = 0
 	@ frame_needed = 0, uses_anonymous_args = 0
 	push	{r4, r5, r6, lr}
-	mov	r2, #4352
+	mov	r2, #6400
 	mov	r5, #67108864
-	ldr	r3, .L22
+	ldr	r4, .L22
 	strh	r2, [r5]	@ movhi
-	mov	lr, pc
-	bx	r3
-	ldr	r4, .L22+4
-	mov	r3, #256
-	mov	r2, #83886080
-	ldr	r1, .L22+8
+	mov	r3, #4608
+	mov	r2, #100663296
+	ldr	r1, .L22+4
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
-	mov	r3, #4608
-	mov	r2, #100663296
+	mov	r3, #2048
+	ldr	r2, .L22+8
 	ldr	r1, .L22+12
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
-	mov	r3, #4096
 	ldr	r2, .L22+16
+	mov	r3, #256
+	strh	r2, [r5, #8]	@ movhi
 	ldr	r1, .L22+20
+	mov	r2, #83886080
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
+	mov	r3, #5440
 	ldr	r2, .L22+24
-	mov	r3, #256
-	strh	r2, [r5, #8]	@ movhi
 	ldr	r1, .L22+28
+	mov	r0, #3
+	mov	lr, pc
+	bx	r4
+	mov	r3, #2048
 	ldr	r2, .L22+32
+	ldr	r1, .L22+36
+	mov	r0, #3
+	mov	lr, pc
+	bx	r4
+	ldr	r2, .L22+40
+	mov	r3, #256
+	strh	r2, [r5, #14]	@ movhi
+	ldr	r1, .L22+44
+	ldr	r2, .L22+48
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
 	mov	r3, #16384
-	ldr	r2, .L22+36
-	ldr	r1, .L22+40
+	ldr	r2, .L22+52
+	ldr	r1, .L22+56
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
 	mov	r2, #2
-	ldr	r3, .L22+44
+	ldr	r3, .L22+60
 	pop	{r4, r5, r6, lr}
 	str	r2, [r3]
 	bx	lr
 .L23:
 	.align	2
 .L22:
-	.word	waitForVBlank
 	.word	DMANow
-	.word	gameBG1Pal
 	.word	gameBG1Tiles
-	.word	100720640
+	.word	100673536
 	.word	gameBG1Map
-	.word	-9088
+	.word	17792
+	.word	gameBG3Pal
+	.word	100712448
+	.word	gameBG3Tiles
+	.word	100679680
+	.word	gameBG3Map
+	.word	18575
 	.word	spritesheetPal
 	.word	83886592
 	.word	100728832
@@ -311,9 +328,10 @@ goToPause:
 	mov	lr, pc
 	bx	r3
 	mov	r5, #67108864
-	mov	r3, #256
+	mov	r2, #512
 	ldr	r4, .L35+4
-	strh	r3, [r5]	@ movhi
+	strh	r2, [r5]	@ movhi
+	mov	r3, #256
 	mov	r2, #83886080
 	ldr	r1, .L35+8
 	mov	r0, #3
@@ -334,7 +352,7 @@ goToPause:
 	mov	r1, #7808
 	mov	r2, #3
 	ldr	r3, .L35+24
-	strh	r1, [r5, #8]	@ movhi
+	strh	r1, [r5, #10]	@ movhi
 	str	r2, [r3]
 	pop	{r4, r5, r6, lr}
 	bx	lr
@@ -409,9 +427,10 @@ goToLose:
 	mov	lr, pc
 	bx	r3
 	mov	r5, #67108864
-	mov	r3, #256
+	mov	r2, #512
 	ldr	r4, .L53+4
-	strh	r3, [r5]	@ movhi
+	strh	r2, [r5]	@ movhi
+	mov	r3, #256
 	mov	r2, #83886080
 	ldr	r1, .L53+8
 	mov	r0, #3
@@ -432,7 +451,7 @@ goToLose:
 	mov	r1, #7808
 	mov	r2, #4
 	ldr	r3, .L53+24
-	strh	r1, [r5, #8]	@ movhi
+	strh	r1, [r5, #10]	@ movhi
 	str	r2, [r3]
 	pop	{r4, r5, r6, lr}
 	bx	lr

@@ -1002,11 +1002,16 @@ int score;
 
 int hOffBG0;
 int vOffBG0;
+int hOffBG3;
+int vOffBG3;
 
 
 void initGame() {
- vOffBG0 = 295;
-    hOffBG0 = 0;
+
+ vOffBG0 = (295 << 8);
+    hOffBG0 = (0 << 8);
+    vOffBG3 = (48 << 8);
+    hOffBG3 = (0 << 8);
 
  initPlayer();
 
@@ -1026,9 +1031,14 @@ void initGame() {
 
 
 void updateGame() {
- hOffBG0++;
- (*(volatile unsigned short *)0x04000010) = hOffBG0;
-    (*(volatile unsigned short *)0x04000012) = vOffBG0;
+ hOffBG0+= 768;
+ hOffBG3+= 64;
+
+
+ (*(volatile unsigned short *)0x04000010) = (hOffBG0 >> 8);
+    (*(volatile unsigned short *)0x04000012) = (vOffBG0 >> 8);
+ (*(volatile unsigned short *)0x0400001C) = (hOffBG3 >> 8);
+    (*(volatile unsigned short *)0x0400001E) = (vOffBG3 >> 8);
 
  updatePlayer();
 
@@ -1070,7 +1080,7 @@ void initPlayer() {
  player.rdel = 1;
  player.height = 16;
  player.width = 32;
-# 93 "game.c"
+# 103 "game.c"
 }
 
 void initPolice(POLICE* p, int spriteID) {
@@ -1080,7 +1090,7 @@ void initPolice(POLICE* p, int spriteID) {
  p->row = (160 - 64) + 8 - 16;
  p->col = (player.screenCol - (player.width * 2) - 16);
  p->cdel = 1;
-# 110 "game.c"
+# 120 "game.c"
 }
 
 
@@ -1171,9 +1181,9 @@ void updatePlayer() {
   shadowOAM[0].attr1 = (2<<14) | player.screenCol;
 
   if (ghostMode) {
-   shadowOAM[0].attr2 = (((2)*32+(0))) | ((0)<<12);
+   shadowOAM[0].attr2 = (((2)*32+(0))) | ((0)<<12) | ((1)<<10);
   } else {
-   shadowOAM[0].attr2 = (((0)*32+(0))) | ((0)<<12);
+   shadowOAM[0].attr2 = (((0)*32+(0))) | ((0)<<12) | ((1)<<10);
   }
 
 }
@@ -1216,25 +1226,25 @@ void updateObstacles(OBSTACLE* e) {
 
     shadowOAM[e->spriteID].attr0 = (1<<14) | (0xFF & e->row);
     shadowOAM[e->spriteID].attr1 = (1<<14) | (0x1FF & e->col);
-    shadowOAM[e->spriteID].attr2 = (((0)*32+(9))) | ((0)<<12);
+    shadowOAM[e->spriteID].attr2 = (((0)*32+(9))) | ((3)<<10);
     break;
    case BIRD:
 
     shadowOAM[e->spriteID].attr0 = (0<<14) | (0xFF & e->row);
     shadowOAM[e->spriteID].attr1 = (0<<14) | (0x1FF & e->col);
-    shadowOAM[e->spriteID].attr2 = (((0)*32+(7))) | ((0)<<12);
+    shadowOAM[e->spriteID].attr2 = (((0)*32+(7))) | ((1)<<10);
     break;
    case SIGN:
 
     shadowOAM[e->spriteID].attr0 = (2<<14) | (0xFF & e->row);
     shadowOAM[e->spriteID].attr1 = (0<<14) | (0x1FF & e->col);
-    shadowOAM[e->spriteID].attr2 = (((1)*32+(9))) | ((0)<<12);
+    shadowOAM[e->spriteID].attr2 = (((1)*32+(9))) | ((1)<<10);
     break;
    case LONGSIGN:
 
     shadowOAM[e->spriteID].attr0 = (2<<14) | (0xFF & e->row);
     shadowOAM[e->spriteID].attr1 = (1<<14) | (0x1FF & e->col);
-    shadowOAM[e->spriteID].attr2 = (((1)*32+(10))) | ((0)<<12);
+    shadowOAM[e->spriteID].attr2 = (((1)*32+(10))) | ((1)<<10);
     break;
   }
 
@@ -1265,21 +1275,21 @@ void updateBullets(BULLET* b) {
 }
 
 void updatePolice(POLICE* p) {
- if (collision(player.screenRow, player.screenCol, player.height, player.width, p->row, p->col, p->height, p->width)) {
+ if (player.screenCol <= (p->col + p->width - 1)) {
    hasLost = 1;
   }
 
 
  shadowOAM[60 + p->spriteID].attr0 = (1<<14) | (0xFF & p->row);
  shadowOAM[60 + p->spriteID].attr1 = (2<<14) | (0x1FF & p->col);
- shadowOAM[60 + p->spriteID].attr2 = (((4)*32+(0))) | ((0)<<12) | ((0)<<10);
+ shadowOAM[60 + p->spriteID].attr2 = (((4)*32+(0))) | ((0)<<12) | ((1)<<10);
 }
 
 void fireBullet() {
  for (int i = 0; i < 3; i++) {
   if (bullets[i].active == 0) {
    bullets[i].row = player.screenRow;
-   bullets[i].col = player.screenCol;
+   bullets[i].col = player.screenCol + player.width - 1;
    bullets[i].active = 1;
    break;
   }

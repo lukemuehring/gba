@@ -2,7 +2,7 @@
 # 1 "<built-in>"
 # 1 "<command-line>"
 # 1 "main.c"
-# 82 "main.c"
+# 110 "main.c"
 # 1 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdlib.h" 1 3
 # 10 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdlib.h" 3
 # 1 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\machine\\ieeefp.h" 1 3
@@ -805,7 +805,7 @@ extern long double _strtold_r (struct _reent *, const char *restrict, char **res
 extern long double strtold (const char *restrict, char **restrict);
 # 335 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdlib.h" 3
 
-# 83 "main.c" 2
+# 111 "main.c" 2
 # 1 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdio.h" 1 3
 # 36 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdio.h" 3
 # 1 "c:\\devkitpro\\devkitarm\\lib\\gcc\\arm-none-eabi\\8.2.0\\include\\stddef.h" 1 3 4
@@ -1216,7 +1216,7 @@ _putchar_unlocked(int _c)
 }
 # 797 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdio.h" 3
 
-# 84 "main.c" 2
+# 112 "main.c" 2
 # 1 "myLib.h" 1
 
 
@@ -1315,7 +1315,7 @@ void DMANow(int channel, volatile const void *src, volatile void *dst, unsigned 
 
 
 int collision(int rowA, int colA, int heightA, int widthA, int rowB, int colB, int heightB, int widthB);
-# 85 "main.c" 2
+# 113 "main.c" 2
 # 1 "welcome.h" 1
 # 22 "welcome.h"
 extern const unsigned short welcomeTiles[1696];
@@ -1325,7 +1325,7 @@ extern const unsigned short welcomeMap[4096];
 
 
 extern const unsigned short welcomePal[256];
-# 86 "main.c" 2
+# 114 "main.c" 2
 # 1 "instructions.h" 1
 # 22 "instructions.h"
 extern const unsigned short instructionsTiles[1312];
@@ -1335,7 +1335,7 @@ extern const unsigned short instructionsMap[4096];
 
 
 extern const unsigned short instructionsPal[256];
-# 87 "main.c" 2
+# 115 "main.c" 2
 # 1 "game.h" 1
 
 typedef struct {
@@ -1420,17 +1420,27 @@ void updateObstacles(OBSTACLE *);
 void initBullets();
 void updateBullets(BULLET *);
 void fireBullet();
-# 88 "main.c" 2
+# 116 "main.c" 2
 # 1 "gameBG1.h" 1
 # 22 "gameBG1.h"
 extern const unsigned short gameBG1Tiles[4608];
 
 
-extern const unsigned short gameBG1Map[4096];
+extern const unsigned short gameBG1Map[2048];
 
 
 extern const unsigned short gameBG1Pal[256];
-# 89 "main.c" 2
+# 117 "main.c" 2
+# 1 "gameBG3.h" 1
+# 22 "gameBG3.h"
+extern const unsigned short gameBG3Tiles[5440];
+
+
+extern const unsigned short gameBG3Map[2048];
+
+
+extern const unsigned short gameBG3Pal[256];
+# 118 "main.c" 2
 # 1 "pause.h" 1
 # 22 "pause.h"
 extern const unsigned short pauseTiles[832];
@@ -1440,7 +1450,7 @@ extern const unsigned short pauseMap[4096];
 
 
 extern const unsigned short pausePal[256];
-# 90 "main.c" 2
+# 119 "main.c" 2
 # 1 "lose.h" 1
 # 22 "lose.h"
 extern const unsigned short loseTiles[704];
@@ -1450,14 +1460,14 @@ extern const unsigned short loseMap[4096];
 
 
 extern const unsigned short losePal[256];
-# 91 "main.c" 2
+# 120 "main.c" 2
 # 1 "spritesheet.h" 1
 # 21 "spritesheet.h"
 extern const unsigned short spritesheetTiles[16384];
 
 
 extern const unsigned short spritesheetPal[256];
-# 92 "main.c" 2
+# 121 "main.c" 2
 
 OBJ_ATTR shadowOAM[128];
 
@@ -1531,7 +1541,7 @@ void initialize() {
 
 
 void goToMenu() {
-    (*(unsigned short *)0x4000000) = 0 | (1<<8);
+    (*(unsigned short *)0x4000000) = 0 | (1<<9);
 
 
 
@@ -1544,7 +1554,7 @@ void goToMenu() {
     DMANow(3, welcomeMap, &((screenblock *)0x6000000)[31], 8192 / 2);
 
 
-    (*(volatile unsigned short*)0x4000008) = (0<<14) | ((0)<<2) | ((31)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((31)<<8) | (1<<7);
     state = MENU;
 
     hideSprites();
@@ -1564,7 +1574,7 @@ void menu() {
 
 void goToStart() {
     waitForVBlank();
-    (*(unsigned short *)0x4000000) = 0 | (1<<8);
+    (*(unsigned short *)0x4000000) = 0 | (1<<9);
 
 
 
@@ -1577,7 +1587,7 @@ void goToStart() {
     DMANow(3, instructionsMap, &((screenblock *)0x6000000)[31], 8192 / 2);
 
 
-    (*(volatile unsigned short*)0x4000008) = (0<<14) | ((0)<<2) | ((31)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((31)<<8) | (1<<7);
     state = START;
 
 
@@ -1603,21 +1613,29 @@ void start() {
 
 
 void goToGame() {
- (*(unsigned short *)0x4000000) = 0 | (1<<8) | (1<<12);
+ (*(unsigned short *)0x4000000) = 0 | (1<<8) | (1<<11) | (1<<12);
 
 
-
- waitForVBlank();
-    DMANow(3, gameBG1Pal, ((unsigned short *)0x5000000), 512 / 2);
 
 
     DMANow(3, gameBG1Tiles, &((charblock *)0x6000000)[0], 9216 / 2);
 
 
-    DMANow(3, gameBG1Map, &((screenblock *)0x6000000)[28], 8192 / 2);
+    DMANow(3, gameBG1Map, &((screenblock *)0x6000000)[5], 4096 / 2);
 
 
-    (*(volatile unsigned short*)0x4000008) = (3<<14) | ((0)<<2) | ((28)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x4000008) = (1<<14) | ((0)<<2) | ((5)<<8) | (1<<7) | 0;
+# 295 "main.c"
+    DMANow(3, gameBG3Pal, ((unsigned short *)0x5000000), 512 / 2);
+
+
+    DMANow(3, gameBG3Tiles, &((charblock *)0x6000000)[3], 10880 / 2);
+
+
+    DMANow(3, gameBG3Map, &((screenblock *)0x6000000)[8], 4096 / 2);
+
+
+    (*(volatile unsigned short*)0x400000E) = (1<<14) | ((3)<<2) | ((8)<<8) | (1<<7) | 3;
 
 
  DMANow(3, spritesheetPal, ((unsigned short *)0x5000200), 512 / 2);
@@ -1645,7 +1663,7 @@ void goToPause() {
 
     waitForVBlank();
 
-    (*(unsigned short *)0x4000000) = 0 | (1<<8);
+    (*(unsigned short *)0x4000000) = 0 | (1<<9);
 
 
     DMANow(3, pausePal, ((unsigned short *)0x5000000), 512 / 2);
@@ -1657,7 +1675,7 @@ void goToPause() {
     DMANow(3, pauseMap, &((screenblock *)0x6000000)[30], 8192 / 2);
 
 
-    (*(volatile unsigned short*)0x4000008) = (0<<14) | ((0)<<2) | ((30)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((30)<<8) | (1<<7);
 
     state = PAUSE;
 }
@@ -1679,10 +1697,7 @@ void pause() {
 void goToLose() {
     waitForVBlank();
 
-    (*(unsigned short *)0x4000000) = 0 | (1<<8);
-
-
-
+    (*(unsigned short *)0x4000000) = 0 | (1<<9);
 
 
     DMANow(3, losePal, ((unsigned short *)0x5000000), 512 / 2);
@@ -1694,7 +1709,7 @@ void goToLose() {
     DMANow(3, loseMap, &((screenblock *)0x6000000)[30], 8192 / 2);
 
 
-    (*(volatile unsigned short*)0x4000008) = (0<<14) | ((0)<<2) | ((30)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((30)<<8) | (1<<7);
 
     state = LOSE;
 }

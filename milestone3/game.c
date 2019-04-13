@@ -14,11 +14,16 @@ int score;
 //Backgroud Variables
 int hOffBG0;
 int vOffBG0;
+int hOffBG3;
+int vOffBG3;
 
 // Initialize the game
 void initGame() {
-	vOffBG0 = 295;
-    hOffBG0 = 0;
+	//initializing background offset registers and encoding the offset using 1/256 fixed point encoding
+	vOffBG0 = SHIFTUP(295);
+    hOffBG0 = SHIFTUP(0);
+    vOffBG3 = SHIFTUP(48);
+    hOffBG3 = SHIFTUP(0);
 
 	initPlayer();
 
@@ -38,9 +43,14 @@ void initGame() {
 
 // Updates the game each frame
 void updateGame() {
-	hOffBG0++;
-	REG_BG0HOFF = hOffBG0;
-    REG_BG0VOFF = vOffBG0;
+	hOffBG0+= 768; //3 * (256)
+	hOffBG3+= 64; // .5
+
+	//shift back down encoding 
+	REG_BG0HOFF = SHIFTDOWN(hOffBG0);
+    REG_BG0VOFF = SHIFTDOWN(vOffBG0);
+	REG_BG3HOFF = SHIFTDOWN(hOffBG3);
+    REG_BG3VOFF = SHIFTDOWN(vOffBG3);
 
 	updatePlayer();
 
@@ -197,9 +207,9 @@ void updatePlayer() {
 		shadowOAM[0].attr1 = ATTR1_MEDIUM | player.screenCol;
 
 		if (ghostMode) {
-			shadowOAM[0].attr2 = (ATTR2_TILEID(2,0)) | ATTR2_PALROW(0); 
+			shadowOAM[0].attr2 = (ATTR2_TILEID(2,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(1); 
 		} else {
-			shadowOAM[0].attr2 = (ATTR2_TILEID(0,0)) | ATTR2_PALROW(0); 
+			shadowOAM[0].attr2 = (ATTR2_TILEID(0,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(1); 
 		}
 		
 }
@@ -236,31 +246,31 @@ void updateObstacles(OBSTACLE* e) {
 		//moving the obstacle to the left
 		e-> col += e-> cdel;
 
-		//obstacles at sprite index 1 to NUMOBSTACLES
+		//Obstacles at sprite index 1 to NUMOBSTACLES-1
 		switch(e->spriteType) {
 			case POTHOLE:
 				//Potholes are at tile (0,9) on spritesheet
 				shadowOAM[e->spriteID].attr0 = ATTR0_WIDE | (ROWMASK & e->row);
 				shadowOAM[e->spriteID].attr1 = ATTR1_SMALL |  (COLMASK & e->col);
-				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,9)) | ATTR2_PALROW(0); //@ set priorities to make the signs draw over the potholes
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,9)) | ATTR2_PRIORITY(3); //@ set priorities to make the signs draw over the potholes
 				break;
 			case BIRD:
 				//Birds are at tile (0,7) on spritesheet
 				shadowOAM[e->spriteID].attr0 = ATTR0_SQUARE | (ROWMASK & e->row);
 				shadowOAM[e->spriteID].attr1 = ATTR1_TINY | (COLMASK & e->col);
-				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,7)) | ATTR2_PALROW(0);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(0,7)) | ATTR2_PRIORITY(1);
 				break;
 			case SIGN:
 				//Signs are at tile (1,9) on spritesheet
 				shadowOAM[e->spriteID].attr0 = ATTR0_TALL | (ROWMASK & e->row);
 				shadowOAM[e->spriteID].attr1 = ATTR1_TINY |  (COLMASK & e->col);
-				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(1,9)) | ATTR2_PALROW(0);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(1,9)) | ATTR2_PRIORITY(1);
 				break;
 			case LONGSIGN:
 				//Long signs are at tile (1,10) on spritesheet
 				shadowOAM[e->spriteID].attr0 = ATTR0_TALL | (ROWMASK & e->row);
 				shadowOAM[e->spriteID].attr1 = ATTR1_SMALL |  (COLMASK & e->col);
-				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(1,10)) | ATTR2_PALROW(0);
+				shadowOAM[e->spriteID].attr2 = (ATTR2_TILEID(1,10)) | ATTR2_PRIORITY(1);
 				break;
 		}	
 
@@ -291,21 +301,21 @@ void updateBullets(BULLET* b) {
 }
 
 void updatePolice(POLICE* p) {
-	if (collision(player.screenRow, player.screenCol, player.height, player.width, p->row, p->col, p->height, p->width)) {
+	if (player.screenCol <= (p->col + p->width - 1)) {
 			hasLost = 1;
 		}
 	//putting the police at sprite index 60
 	//police are tile (4,0) on spritesheet @
 	shadowOAM[60 + p->spriteID].attr0 = ATTR0_WIDE | (ROWMASK & p->row);
 	shadowOAM[60 + p->spriteID].attr1 = ATTR1_MEDIUM |  (COLMASK & p->col);
-	shadowOAM[60 + p->spriteID].attr2 = (ATTR2_TILEID(4,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(0); 
+	shadowOAM[60 + p->spriteID].attr2 = (ATTR2_TILEID(4,0)) | ATTR2_PALROW(0) | ATTR2_PRIORITY(1); 
 }
 
 void fireBullet() {
 	for (int i = 0; i < BULLETCOUNT; i++) {
 		if (bullets[i].active == 0) {
 			bullets[i].row = player.screenRow;
-			bullets[i].col = player.screenCol;
+			bullets[i].col = player.screenCol + player.width - 1;
 			bullets[i].active = 1;
 			break;
 		}

@@ -255,5 +255,9 @@ void DMANow(int channel, volatile const void *src, volatile void *dst, unsigned 
 // Miscellaneous Functions
 int collision(int rowA, int colA, int heightA, int widthA, int rowB, int colB, int heightB, int widthB);
 
+#define SHIFTUP(num) (num << 8)
+#define SHIFTDOWN(num) (num >> 8)
+
+
 
 #endif
