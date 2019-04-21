@@ -16,10 +16,18 @@ BUGS / QUESTIONS:
 
      -player can avoid losing by staying in the up position FIXED
 
+    -pink tile bug FIXED
+
+    -@bg offset off by 1? FIXED
+
+     -PLAYER sprite pallette is glitched FIXED
+
     -how do I make smooth animations/position updates? Like when the player gets hit, instead of doing a choppy jump, how do I force it
         to move backwards in a smooth fashion over time, and then stop (like move to the left 4cm smoothly and stop on the screen)
+    
+    -Sound sounds really airy and has lots of background noise / static???
+   
 
-    -pink tile bug + bg1 rail not showing
 
 Finished:
     Milestones 1 & 2
@@ -31,7 +39,7 @@ Finished:
         Created obstacles
         Created bullets that destroy obstacles
 
-    Milestone 3:
+    Milestones 3 & 4:
         Obstacles are spawned at random times and the type of the obstacle is also random
 
         Created police
@@ -49,7 +57,25 @@ Finished:
 
         Got sprite priority working 
 
+        Designed a player sprite
+
+        Designed uzi sprite
+
+        Designed police car sprite
+
+        added sound to the game
+
+            designed background music 
+
+            added background music
+            have sound effects play when:
+                player is hit
+
 To Do:
+
+    Give the player one chance after being hit
+    Player hit animation (blinking sprite) and moves one spot to left, if hit again gets caught by police and loses
+
 
     change player movement mechanics
         have the button presses more permanent:
@@ -60,9 +86,6 @@ To Do:
             make sure the player can not double jump
 
     Use timers to determine when obstacles spawn so you have more control
-
-    Give the player one chance after being hit
-    Player hit animation (blinking sprite) and moves one spot to left, if hit again gets caught by police and loses
 
     if not hit for like 3 seconds, slowly moves forward in smooth animation
 
@@ -76,15 +99,9 @@ To Do:
 
     add score counter on the screen
 
-    add sound to the game
-        add background music
-        have sound effects play when:
-            player is hit
-            player 
+    Create clouds and buildings and have them move in parallax
 
-    Create the other 3 simultaneuous backgrounds and have them move in parallax
-
-    Design a player sprite
+    
     Animate the Player "car"
     Design a police sprite
     Animate the police to have flashing lights
@@ -117,6 +134,13 @@ To Do:
 #include "gameBG3.h"
 #include "pause.h"
 #include "lose.h"
+#include "sound.h"
+#include "GameSong.h"  
+#include "MenuSong.h"
+#include "InstructionsSong.h" 
+#include "LoseSong.h"
+#include "StartSFX.h"
+
 #include "spritesheet.h"
 
 OBJ_ATTR shadowOAM[128];
@@ -149,6 +173,10 @@ unsigned short oldButtons;
 
 // Random Seed
 int seed;
+
+//Sound
+SOUND soundA;
+SOUND soundB;   
 
 int main() {
 
@@ -186,6 +214,8 @@ int main() {
 void initialize() {
 
     // Set up the first state
+    setupSounds();
+    setupSoundInterrupts();
     goToMenu();
 }
 
@@ -201,14 +231,16 @@ void goToMenu() {
     DMANow(3, welcomeTiles, &CHARBLOCK[0], welcomeTilesLen / 2);
 
     //loading TileMap
-    DMANow(3, welcomeMap, &SCREENBLOCK[31], welcomeMapLen / 2);
+    DMANow(3, welcomeMap, &SCREENBLOCK[25], welcomeMapLen / 2);
 
     //Setting BG0 registers for welcome screen
-    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(25) | BG_8BPP;
     state = MENU;
 
     hideSprites();  
     DMANow(3, shadowOAM, OAM, 128 * 4);
+
+    playSoundB(MenuSong,MENUSONGLEN,MENUSONGFREQ, 1);
 }
 
 void menu() {
@@ -218,6 +250,8 @@ void menu() {
     // State transitions
     if (BUTTON_PRESSED(BUTTON_START)) {
         goToStart();
+        playSoundA(StartSFX,STARTSFXLEN,STARTSFXFREQ, 0);
+        playSoundB(InstructionsSong,INSTRUCTIONSSONGLEN,INSTRUCTIONSSONGFREQ, 1);
     }
 }
 
@@ -234,10 +268,10 @@ void goToStart() {
     DMANow(3, instructionsTiles, &CHARBLOCK[0], instructionsTilesLen / 2);
 
     //loading TileMap
-    DMANow(3, instructionsMap, &SCREENBLOCK[31], instructionsMapLen / 2);
+    DMANow(3, instructionsMap, &SCREENBLOCK[25], instructionsMapLen / 2);
 
     //Setting BG0 registers for welcome screen
-    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(31) | BG_8BPP;
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(25) | BG_8BPP;
     state = START;
 
     // Begin the seed randomization
@@ -257,9 +291,11 @@ void start() {
     if (BUTTON_PRESSED(BUTTON_START)) {
         srand(seed); //seed the random generator
     	initGame();
+        playSoundB(GameSong,GAMESONGLEN,GAMESONGFREQ, 1);
         goToGame();
     }
 }
+//@gamesong, menusong, instructionssong, startSFX, pauseSong
 
 // Sets up the game state
 void goToGame() {
@@ -316,10 +352,13 @@ void game() {
     updateGame();
 
     // State transitions
-    if (BUTTON_PRESSED(BUTTON_START)) 
+    if (BUTTON_PRESSED(BUTTON_START)) {
+        pauseSound(); 
         goToPause();
+    } 
     //LOSING CONDITION
     if (hasLost)
+
         goToLose();
 }
 
@@ -338,10 +377,10 @@ void goToPause() {
     DMANow(3, pauseTiles, &CHARBLOCK[0], pauseTilesLen / 2);
 
     //loading TileMap
-    DMANow(3, pauseMap, &SCREENBLOCK[30], pauseMapLen / 2);
+    DMANow(3, pauseMap, &SCREENBLOCK[25], pauseMapLen / 2);
 
     //Setting BG0 registers for screen
-    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(25) | BG_8BPP;
     
     state = PAUSE;
 }
@@ -353,10 +392,15 @@ void pause() {
     //drawSomething
 
     // State transitions
-    if (BUTTON_PRESSED(BUTTON_START))
-        goToGame();
-    else if (BUTTON_PRESSED(BUTTON_SELECT))
+    if (BUTTON_PRESSED(BUTTON_START)) {
+       unpauseSound();
+        goToGame(); 
+    } else if (BUTTON_PRESSED(BUTTON_SELECT)) {
+        //stops the sound and restarts the menu song 
+        stopSound();
+        playSoundB(MenuSong,MENUSONGLEN,MENUSONGFREQ, 1);
         goToMenu();
+    }     
 }
 
 // Sets up the lose state
@@ -372,20 +416,21 @@ void goToLose() {
     DMANow(3, loseTiles, &CHARBLOCK[0], loseTilesLen / 2);
 
     //loading TileMap
-    DMANow(3, loseMap, &SCREENBLOCK[30], loseMapLen / 2);
+    DMANow(3, loseMap, &SCREENBLOCK[20], loseMapLen / 2);
 
     //Setting BG0 registers for screen
-    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_8BPP;   
+    REG_BG1CNT = BG_SIZE_SMALL | BG_CHARBLOCK(0) | BG_SCREENBLOCK(20) | BG_8BPP;   
 
     state = LOSE;
+    stopSound();
+    playSoundB(LoseSong,LOSESONGLEN,LOSESONGFREQ, 1);
+
 }
 
 // Runs every frame of the lose state
 void lose() {
      
-    waitForVBlank();
-    //draw something
-
+    
     // State transitions
     if (BUTTON_PRESSED(BUTTON_START)) 
         goToMenu();

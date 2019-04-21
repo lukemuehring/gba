@@ -1,5 +1,5 @@
 PRODUCT_NAME       = Project
-SOURCES            = main.c myLib.c game.c welcome.c gameBG1.c gameBG3.c pause.c lose.c instructions.c spritesheet.c
+SOURCES            = main.c myLib.c game.c welcome.c gameBG1.c gameBG3.c collisionmap.c pause.c lose.c instructions.c spritesheet.c sound.c GameSong.c InstructionsSong.c MenuSong.c LoseSong.c StartSFX.c hitSFX.c
 CCPATH             = C:/cygwin64/bin
 DKPATH             = C:/devkitPro
 VBASIM             = C:/vbam-2.0.1/bin/visualboyadvance-m.exe

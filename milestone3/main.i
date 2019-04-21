@@ -2,7 +2,7 @@
 # 1 "<built-in>"
 # 1 "<command-line>"
 # 1 "main.c"
-# 110 "main.c"
+# 127 "main.c"
 # 1 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdlib.h" 1 3
 # 10 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdlib.h" 3
 # 1 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\machine\\ieeefp.h" 1 3
@@ -805,7 +805,7 @@ extern long double _strtold_r (struct _reent *, const char *restrict, char **res
 extern long double strtold (const char *restrict, char **restrict);
 # 335 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdlib.h" 3
 
-# 111 "main.c" 2
+# 128 "main.c" 2
 # 1 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdio.h" 1 3
 # 36 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdio.h" 3
 # 1 "c:\\devkitpro\\devkitarm\\lib\\gcc\\arm-none-eabi\\8.2.0\\include\\stddef.h" 1 3 4
@@ -1216,7 +1216,7 @@ _putchar_unlocked(int _c)
 }
 # 797 "c:\\devkitpro\\devkitarm\\arm-none-eabi\\include\\stdio.h" 3
 
-# 112 "main.c" 2
+# 129 "main.c" 2
 # 1 "myLib.h" 1
 
 
@@ -1310,32 +1310,44 @@ typedef volatile struct {
 extern DMA *dma;
 # 251 "myLib.h"
 void DMANow(int channel, volatile const void *src, volatile void *dst, unsigned int cnt);
+# 342 "myLib.h"
+typedef struct{
+    const unsigned char* data;
+    int length;
+    int frequency;
+    int isPlaying;
+    int loops;
+    int duration;
+    int priority;
+    int vBlankCount;
+} SOUND;
+
 
 
 
 
 int collision(int rowA, int colA, int heightA, int widthA, int rowB, int colB, int heightB, int widthB);
-# 113 "main.c" 2
+# 130 "main.c" 2
 # 1 "welcome.h" 1
 # 22 "welcome.h"
-extern const unsigned short welcomeTiles[1696];
+extern const unsigned short welcomeTiles[16224];
 
 
-extern const unsigned short welcomeMap[4096];
+extern const unsigned short welcomeMap[1024];
 
 
 extern const unsigned short welcomePal[256];
-# 114 "main.c" 2
+# 131 "main.c" 2
 # 1 "instructions.h" 1
 # 22 "instructions.h"
-extern const unsigned short instructionsTiles[1312];
+extern const unsigned short instructionsTiles[2624];
 
 
-extern const unsigned short instructionsMap[4096];
+extern const unsigned short instructionsMap[1024];
 
 
 extern const unsigned short instructionsPal[256];
-# 115 "main.c" 2
+# 132 "main.c" 2
 # 1 "game.h" 1
 
 typedef struct {
@@ -1352,6 +1364,19 @@ typedef struct {
     int numFrames;
     int hide;
 } PLAYER;
+
+typedef struct {
+    int screenRow;
+    int screenCol;
+    int rdel;
+    int cdel;
+    int aniCounter;
+    int aniState;
+    int prevAniState;
+    int curFrame;
+    int numFrames;
+    int hide;
+} UZI;
 
 
 typedef struct {
@@ -1398,12 +1423,12 @@ typedef struct {
     int curFrame;
     int numFrames;
 } OBSTACLE;
-# 78 "game.h"
+# 96 "game.h"
 enum {POTHOLE, BIRD, SIGN, LONGSIGN};
 
 
 extern PLAYER player;
-extern OBSTACLE obs[6];
+extern OBSTACLE obs[10];
 extern int hasLost;
 extern int score;
 
@@ -1412,6 +1437,7 @@ void initGame();
 void updateGame();
 void initPlayer();
 void updatePlayer();
+void animatePlayer();
 void initPolice(POLICE *, int);
 void updatePolice(POLICE *);
 void initObstacle(OBSTACLE *, int, int);
@@ -1420,7 +1446,11 @@ void updateObstacles(OBSTACLE *);
 void initBullets();
 void updateBullets(BULLET *);
 void fireBullet();
-# 116 "main.c" 2
+void intInOneMin();
+
+void setupTimeInterrupts();
+void timeInterruptHandler();
+# 133 "main.c" 2
 # 1 "gameBG1.h" 1
 # 22 "gameBG1.h"
 extern const unsigned short gameBG1Tiles[4608];
@@ -1430,44 +1460,80 @@ extern const unsigned short gameBG1Map[2048];
 
 
 extern const unsigned short gameBG1Pal[256];
-# 117 "main.c" 2
+# 134 "main.c" 2
 # 1 "gameBG3.h" 1
 # 22 "gameBG3.h"
-extern const unsigned short gameBG3Tiles[5440];
+extern const unsigned short gameBG3Tiles[2912];
 
 
 extern const unsigned short gameBG3Map[2048];
 
 
 extern const unsigned short gameBG3Pal[256];
-# 118 "main.c" 2
+# 135 "main.c" 2
 # 1 "pause.h" 1
 # 22 "pause.h"
-extern const unsigned short pauseTiles[832];
+extern const unsigned short pauseTiles[19232];
 
 
-extern const unsigned short pauseMap[4096];
+extern const unsigned short pauseMap[1024];
 
 
 extern const unsigned short pausePal[256];
-# 119 "main.c" 2
+# 136 "main.c" 2
 # 1 "lose.h" 1
 # 22 "lose.h"
-extern const unsigned short loseTiles[704];
+extern const unsigned short loseTiles[15712];
 
 
-extern const unsigned short loseMap[4096];
+extern const unsigned short loseMap[1024];
 
 
 extern const unsigned short losePal[256];
-# 120 "main.c" 2
+# 137 "main.c" 2
+# 1 "sound.h" 1
+SOUND soundA;
+SOUND soundB;
+
+void setupSounds();
+void playSoundA( const unsigned char* sound, int length, int frequency, int loops);
+void playSoundB( const unsigned char* sound, int length, int frequency, int loops);
+
+void setupSoundInterrupts();
+void soundInterruptHandler();
+
+void pauseSound();
+void unpauseSound();
+void stopSound();
+# 138 "main.c" 2
+# 1 "GameSong.h" 1
+# 20 "GameSong.h"
+extern const unsigned char GameSong[1038906];
+# 139 "main.c" 2
+# 1 "MenuSong.h" 1
+# 20 "MenuSong.h"
+extern const unsigned char MenuSong[724937];
+# 140 "main.c" 2
+# 1 "InstructionsSong.h" 1
+# 20 "InstructionsSong.h"
+extern const unsigned char InstructionsSong[2335780];
+# 141 "main.c" 2
+# 1 "LoseSong.h" 1
+# 20 "LoseSong.h"
+extern const unsigned char LoseSong[2116997];
+# 142 "main.c" 2
+# 1 "StartSFX.h" 1
+# 20 "StartSFX.h"
+extern const unsigned char StartSFX[13009];
+# 143 "main.c" 2
+
 # 1 "spritesheet.h" 1
 # 21 "spritesheet.h"
 extern const unsigned short spritesheetTiles[16384];
 
 
 extern const unsigned short spritesheetPal[256];
-# 121 "main.c" 2
+# 145 "main.c" 2
 
 OBJ_ATTR shadowOAM[128];
 
@@ -1499,6 +1565,10 @@ unsigned short oldButtons;
 
 
 int seed;
+
+
+SOUND soundA;
+SOUND soundB;
 
 int main() {
 
@@ -1536,6 +1606,8 @@ int main() {
 void initialize() {
 
 
+    setupSounds();
+    setupSoundInterrupts();
     goToMenu();
 }
 
@@ -1548,17 +1620,19 @@ void goToMenu() {
     DMANow(3, welcomePal, ((unsigned short *)0x5000000), 512 / 2);
 
 
-    DMANow(3, welcomeTiles, &((charblock *)0x6000000)[0], 3392 / 2);
+    DMANow(3, welcomeTiles, &((charblock *)0x6000000)[0], 32448 / 2);
 
 
-    DMANow(3, welcomeMap, &((screenblock *)0x6000000)[31], 8192 / 2);
+    DMANow(3, welcomeMap, &((screenblock *)0x6000000)[25], 2048 / 2);
 
 
-    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((31)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((25)<<8) | (1<<7);
     state = MENU;
 
     hideSprites();
     DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128 * 4);
+
+    playSoundB(MenuSong,724937,11025, 1);
 }
 
 void menu() {
@@ -1568,6 +1642,8 @@ void menu() {
 
     if ((!(~(oldButtons)&((1<<3))) && (~buttons & ((1<<3))))) {
         goToStart();
+        playSoundA(StartSFX,13009,11025, 0);
+        playSoundB(InstructionsSong,2335780,11025, 1);
     }
 }
 
@@ -1581,13 +1657,13 @@ void goToStart() {
     DMANow(3, instructionsPal, ((unsigned short *)0x5000000), 512 / 2);
 
 
-    DMANow(3, instructionsTiles, &((charblock *)0x6000000)[0], 2624 / 2);
+    DMANow(3, instructionsTiles, &((charblock *)0x6000000)[0], 5248 / 2);
 
 
-    DMANow(3, instructionsMap, &((screenblock *)0x6000000)[31], 8192 / 2);
+    DMANow(3, instructionsMap, &((screenblock *)0x6000000)[25], 2048 / 2);
 
 
-    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((31)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((25)<<8) | (1<<7);
     state = START;
 
 
@@ -1607,9 +1683,11 @@ void start() {
     if ((!(~(oldButtons)&((1<<3))) && (~buttons & ((1<<3))))) {
         srand(seed);
      initGame();
+        playSoundB(GameSong,1038906,11025, 1);
         goToGame();
     }
 }
+
 
 
 void goToGame() {
@@ -1625,11 +1703,11 @@ void goToGame() {
 
 
     (*(volatile unsigned short*)0x4000008) = (1<<14) | ((0)<<2) | ((5)<<8) | (1<<7) | 0;
-# 295 "main.c"
+# 331 "main.c"
     DMANow(3, gameBG3Pal, ((unsigned short *)0x5000000), 512 / 2);
 
 
-    DMANow(3, gameBG3Tiles, &((charblock *)0x6000000)[3], 10880 / 2);
+    DMANow(3, gameBG3Tiles, &((charblock *)0x6000000)[3], 5824 / 2);
 
 
     DMANow(3, gameBG3Map, &((screenblock *)0x6000000)[8], 4096 / 2);
@@ -1650,10 +1728,13 @@ void game() {
     updateGame();
 
 
-    if ((!(~(oldButtons)&((1<<3))) && (~buttons & ((1<<3)))))
+    if ((!(~(oldButtons)&((1<<3))) && (~buttons & ((1<<3))))) {
+        pauseSound();
         goToPause();
+    }
 
     if (hasLost)
+
         goToLose();
 }
 
@@ -1669,13 +1750,13 @@ void goToPause() {
     DMANow(3, pausePal, ((unsigned short *)0x5000000), 512 / 2);
 
 
-    DMANow(3, pauseTiles, &((charblock *)0x6000000)[0], 1664 / 2);
+    DMANow(3, pauseTiles, &((charblock *)0x6000000)[0], 38464 / 2);
 
 
-    DMANow(3, pauseMap, &((screenblock *)0x6000000)[30], 8192 / 2);
+    DMANow(3, pauseMap, &((screenblock *)0x6000000)[25], 2048 / 2);
 
 
-    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((30)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((25)<<8) | (1<<7);
 
     state = PAUSE;
 }
@@ -1687,10 +1768,15 @@ void pause() {
 
 
 
-    if ((!(~(oldButtons)&((1<<3))) && (~buttons & ((1<<3)))))
+    if ((!(~(oldButtons)&((1<<3))) && (~buttons & ((1<<3))))) {
+       unpauseSound();
         goToGame();
-    else if ((!(~(oldButtons)&((1<<2))) && (~buttons & ((1<<2)))))
+    } else if ((!(~(oldButtons)&((1<<2))) && (~buttons & ((1<<2))))) {
+
+        stopSound();
+        playSoundB(MenuSong,724937,11025, 1);
         goToMenu();
+    }
 }
 
 
@@ -1703,21 +1789,22 @@ void goToLose() {
     DMANow(3, losePal, ((unsigned short *)0x5000000), 512 / 2);
 
 
-    DMANow(3, loseTiles, &((charblock *)0x6000000)[0], 1408 / 2);
+    DMANow(3, loseTiles, &((charblock *)0x6000000)[0], 31424 / 2);
 
 
-    DMANow(3, loseMap, &((screenblock *)0x6000000)[30], 8192 / 2);
+    DMANow(3, loseMap, &((screenblock *)0x6000000)[20], 2048 / 2);
 
 
-    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((30)<<8) | (1<<7);
+    (*(volatile unsigned short*)0x400000A) = (0<<14) | ((0)<<2) | ((20)<<8) | (1<<7);
 
     state = LOSE;
+    stopSound();
+    playSoundB(LoseSong,2116997,11025, 1);
+
 }
 
 
 void lose() {
-
-    waitForVBlank();
 
 
 

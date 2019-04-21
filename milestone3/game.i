@@ -898,6 +898,18 @@ typedef volatile struct {
 extern DMA *dma;
 # 251 "myLib.h"
 void DMANow(int channel, volatile const void *src, volatile void *dst, unsigned int cnt);
+# 342 "myLib.h"
+typedef struct{
+    const unsigned char* data;
+    int length;
+    int frequency;
+    int isPlaying;
+    int loops;
+    int duration;
+    int priority;
+    int vBlankCount;
+} SOUND;
+
 
 
 
@@ -920,6 +932,19 @@ typedef struct {
     int numFrames;
     int hide;
 } PLAYER;
+
+typedef struct {
+    int screenRow;
+    int screenCol;
+    int rdel;
+    int cdel;
+    int aniCounter;
+    int aniState;
+    int prevAniState;
+    int curFrame;
+    int numFrames;
+    int hide;
+} UZI;
 
 
 typedef struct {
@@ -966,20 +991,21 @@ typedef struct {
     int curFrame;
     int numFrames;
 } OBSTACLE;
-# 78 "game.h"
+# 96 "game.h"
 enum {POTHOLE, BIRD, SIGN, LONGSIGN};
 
 
 extern PLAYER player;
-extern OBSTACLE obs[6];
+extern OBSTACLE obs[10];
 extern int hasLost;
-extern int score;
+extern int time;
 
 
 void initGame();
 void updateGame();
 void initPlayer();
 void updatePlayer();
+void animatePlayer();
 void initPolice(POLICE *, int);
 void updatePolice(POLICE *);
 void initObstacle(OBSTACLE *, int, int);
@@ -988,16 +1014,48 @@ void updateObstacles(OBSTACLE *);
 void initBullets();
 void updateBullets(BULLET *);
 void fireBullet();
-# 4 "game.c" 2
+void intInOneMin();
 
+void setupTimeInterrupts();
+# 4 "game.c" 2
+# 1 "collisionmap.h" 1
+# 20 "collisionmap.h"
+extern const unsigned short collisionmapBitmap[33600];
+# 5 "game.c" 2
+# 1 "sound.h" 1
+SOUND soundA;
+SOUND soundB;
+
+void setupSounds();
+void playSoundA( const unsigned char* sound, int length, int frequency, int loops);
+void playSoundB( const unsigned char* sound, int length, int frequency, int loops);
+
+void setupSoundInterrupts();
+void interruptHandler();
+
+void pauseSound();
+void unpauseSound();
+void stopSound();
+# 6 "game.c" 2
+# 1 "hitSFX.h" 1
+# 20 "hitSFX.h"
+extern const unsigned char hitSFX[9156];
+# 7 "game.c" 2
 
 PLAYER player;
+UZI uzi;
 POLICE police[3];
-OBSTACLE obs[6];
-BULLET bullets[3];
+OBSTACLE obs[10];
+BULLET bullets[20];
+
+
 int ghostMode;
+int infiniteAmmo;
 int hasLost;
-int score;
+int time;
+
+
+enum {DRIVE, HURT, JUMP, LAND, SHOOT};
 
 
 int hOffBG0;
@@ -1008,7 +1066,7 @@ int vOffBG3;
 
 void initGame() {
 
- vOffBG0 = (295 << 8);
+ vOffBG0 = (39 << 8);
     hOffBG0 = (0 << 8);
     vOffBG3 = (48 << 8);
     hOffBG3 = (0 << 8);
@@ -1019,14 +1077,17 @@ void initGame() {
   initPolice(&police[i], i + 1);
  }
 
- for (int i = 0; i < 6; i++)
+ for (int i = 0; i < 10; i++)
      initObstacle(&obs[i], i + 1, i % 4);
 
     initBullets();
 
-    score = 0;
+    time = 0;
     hasLost = 0;
     ghostMode = 0;
+
+    setupTimeInterrupts();
+
  }
 
 
@@ -1046,18 +1107,18 @@ void updateGame() {
 
 
  if (rand() % 100 == 0) {
-  randomIndex = rand() % 6;
+  randomIndex = rand() % 10;
   if ((&obs[randomIndex])->active == 0) {
    spawnObstacle(&obs[randomIndex]);
   }
  }
 
 
- for (int i = 0; i < 6; i++)
+ for (int i = 0; i < 10; i++)
   updateObstacles(&obs[i]);
 
 
- for (int i = 0; i < 3; i++)
+ for (int i = 0; i < 20; i++)
   updateBullets(&bullets[i]);
 
  for (int i = 0; i < 3; i++) {
@@ -1067,30 +1128,31 @@ void updateGame() {
 
  waitForVBlank();
  DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128 * 4);
-
- score++;
 }
 
 
 void initPlayer() {
 
- player.screenRow = (160 - 64) - 16;
- player.screenCol = (240 / 2)- 30;
+ player.screenRow = (160 - 64) - 64;
+ player.screenCol = (240 / 2) - 48;
  player.cdel = 1;
- player.rdel = 1;
+ player.rdel = 0;
  player.height = 16;
- player.width = 32;
-# 103 "game.c"
+ player.width = 56;
+# 113 "game.c"
+    uzi.screenRow = player.screenRow;
+ uzi.screenCol = player.screenCol + 36;
+# 124 "game.c"
 }
 
 void initPolice(POLICE* p, int spriteID) {
  p->spriteID = spriteID;
- p->width = 32;
+ p->width = 56;
  p->height = 16;
  p->row = (160 - 64) + 8 - 16;
- p->col = (player.screenCol - (player.width * 2) - 16);
+ p->col = (player.screenCol - 96);
  p->cdel = 1;
-# 120 "game.c"
+# 141 "game.c"
 }
 
 
@@ -1108,30 +1170,35 @@ void initObstacle(OBSTACLE* e, int spriteID, int spriteType) {
 
  switch(e->spriteType) {
   case POTHOLE:
-   e->width = 32;
+   e->width = 16;
    e->height = 8;
-   e->cdel = -1;
+   e->cdel = -2;
    e->row = (160 - 64) + 8 - 8;
    e->col = 240;
    break;
   case BIRD:
    e->width = 8;
    e->height = 8;
-   e->cdel = -2;
-   e->row = (160 - 64) - 32;
+   e->cdel = -3;
+   if ((rand() % 2) == 0) {
+    e->row = (160 - 64) - 18;
+   } else {
+    e->row = (160 - 64) - 32;
+
+   }
    e->col = 240;
    break;
   case SIGN:
    e->width = 8;
    e->height = 16;
-   e->cdel = -1;
+   e->cdel = -2;
    e->row = (160 - 64) + 8 - 16;
    e->col = 240;
    break;
   case LONGSIGN:
    e->width = 8;
    e->height = 24;
-   e->cdel = -1;
+   e->cdel = -2;
    e->row = (160 - 64) + 8 - 24;
    e->col = 240;
 
@@ -1140,7 +1207,7 @@ void initObstacle(OBSTACLE* e, int spriteID, int spriteType) {
 
 
 void initBullets() {
- for (int i = 0; i < 3; i++) {
+ for (int i = 0; i < 20; i++) {
   bullets[i].row = player.screenRow;
   bullets[i].col = player.screenCol + player.width;
   bullets[i].cdel = 8;
@@ -1160,34 +1227,61 @@ void spawnObstacle(OBSTACLE* e) {
 
 void updatePlayer() {
 
-  if((~((*(volatile unsigned short *)0x04000130)) & ((1<<6)))) {
-   player.screenRow = (160 - 64) - (16 * 2);
-  } else if((~((*(volatile unsigned short *)0x04000130)) & ((1<<7)))) {
-   player.screenRow = (160 - 64) - 8;
-  } else {
-   player.screenRow = (160 - 64) - 16;
+  if((!(~(oldButtons)&((1<<6))) && (~buttons & ((1<<6)))) && (player.screenRow == ((160 - 64) - 8))) {
+    player.rdel -= 1000;
   }
+   if (!(player.screenRow >= 256 - player.height)
+    && !(player.screenRow + player.height + (player.rdel >> 8) >= (160 - 64) + 8)) {
+
+    player.rdel += 40;
+   } else {
+    player.rdel = 0;
+    player.screenRow = (160 - 64) - 8;
+   }
+
   if((!(~(oldButtons)&((1<<0))) && (~buttons & ((1<<0))))) {
    fireBullet();
   }
+
   if((~((*(volatile unsigned short *)0x04000130)) & ((1<<1)))) {
    ghostMode = 1;
+   infiniteAmmo = 1;
   } else {
    ghostMode = 0;
+   infiniteAmmo = 0;
   }
 
+  if((~((*(volatile unsigned short *)0x04000130)) & ((1<<0))) && infiniteAmmo) {
+   fireBullet();
+  }
 
-  shadowOAM[0].attr0 = (1<<14) | player.screenRow;
-  shadowOAM[0].attr1 = (2<<14) | player.screenCol;
+  player.screenRow += (player.rdel >> 8);
 
-  if (ghostMode) {
-   shadowOAM[0].attr2 = (((2)*32+(0))) | ((0)<<12) | ((1)<<10);
+
+
+
+
+  shadowOAM[25].attr0 = (1<<14) | (0xFF & player.screenRow);
+  shadowOAM[25].attr1 = (3<<14) | (0x1FF & player.screenCol);
+
+
+  shadowOAM[0].attr0 = (0<<14) | (0xFF & player.screenRow);
+  shadowOAM[0].attr1 = (1<<14) | (0x1FF & (player.screenCol + 35));
+
+  if ( time < 5) {
+   shadowOAM[25].attr2 = (((14)*32+(0))) | ((2)<<12) | ((1)<<10);
   } else {
-   shadowOAM[0].attr2 = (((0)*32+(0))) | ((0)<<12) | ((1)<<10);
+   shadowOAM[25].attr2 = (((6)*32+(0))) | ((2)<<12) | ((1)<<10);
   }
+
+  shadowOAM[0].attr2 = (((0)*32+(0))) | ((1)<<12) | ((0)<<10);
+
 
 }
 
+void animatePlayer() {
+# 283 "game.c"
+}
 
 
 
@@ -1200,7 +1294,7 @@ void updateObstacles(OBSTACLE* e) {
 
  if (e->active) {
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 20; i++) {
    if (bullets[i].active) {
     if (collision(bullets[i].row, bullets[i].col, bullets[i].height, bullets[i].width,e->row, e->col, e->height, e->width)) {
      bullets[i].active = 0;
@@ -1214,7 +1308,9 @@ void updateObstacles(OBSTACLE* e) {
 
 
   if (collision(player.screenRow, player.screenCol, player.height, player.width, e->row, e->col, e->height, e->width) && !(ghostMode)) {
-   player.screenCol -= player.width;
+   player.screenCol -= 16;
+   playSoundA(hitSFX,9156,11025, 0);
+
   }
 
 
@@ -1225,8 +1321,8 @@ void updateObstacles(OBSTACLE* e) {
    case POTHOLE:
 
     shadowOAM[e->spriteID].attr0 = (1<<14) | (0xFF & e->row);
-    shadowOAM[e->spriteID].attr1 = (1<<14) | (0x1FF & e->col);
-    shadowOAM[e->spriteID].attr2 = (((0)*32+(9))) | ((3)<<10);
+    shadowOAM[e->spriteID].attr1 = (0<<14) | (0x1FF & e->col);
+    shadowOAM[e->spriteID].attr2 = (((0)*32+(9))) | ((1)<<12) | ((3)<<10);
     break;
    case BIRD:
 
@@ -1235,6 +1331,7 @@ void updateObstacles(OBSTACLE* e) {
     shadowOAM[e->spriteID].attr2 = (((0)*32+(7))) | ((1)<<10);
     break;
    case SIGN:
+
 
     shadowOAM[e->spriteID].attr0 = (2<<14) | (0xFF & e->row);
     shadowOAM[e->spriteID].attr1 = (0<<14) | (0x1FF & e->col);
@@ -1281,17 +1378,33 @@ void updatePolice(POLICE* p) {
 
 
  shadowOAM[60 + p->spriteID].attr0 = (1<<14) | (0xFF & p->row);
- shadowOAM[60 + p->spriteID].attr1 = (2<<14) | (0x1FF & p->col);
- shadowOAM[60 + p->spriteID].attr2 = (((4)*32+(0))) | ((0)<<12) | ((1)<<10);
+ shadowOAM[60 + p->spriteID].attr1 = (3<<14) | (0x1FF & p->col);
+ shadowOAM[60 + p->spriteID].attr2 = (((6)*32+(8))) | ((2)<<12) | ((1)<<10);
 }
 
 void fireBullet() {
- for (int i = 0; i < 3; i++) {
+ for (int i = 0; i < 20; i++) {
   if (bullets[i].active == 0) {
    bullets[i].row = player.screenRow;
-   bullets[i].col = player.screenCol + player.width - 1;
+   bullets[i].col = player.screenCol + 40;
    bullets[i].active = 1;
    break;
   }
  }
+}
+
+void setup_int_in_one_minute() {
+ *(volatile unsigned short*)0x400010A = 0;
+ *(volatile unsigned short*)0x400010E = 0;
+ *(volatile unsigned short*)0x4000108 = -0x4000;
+ *(volatile unsigned short*)0x400010C = -60;
+ *(volatile unsigned short*)0x400010A = (1<<6) | 3 | (1<<7);
+ *(volatile unsigned short*)0x400010E = (1<<2) | (1<<7);
+}
+
+void setupTimeInterrupts() {
+    *(unsigned short*)0x4000208 = 0;
+    *(unsigned short*)0x4000200 |= 1 << 5;
+    setup_int_in_one_minute();
+    *(unsigned short*)0x4000208 = 1;
 }
